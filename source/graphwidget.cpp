@@ -61,9 +61,10 @@ void graphwidget::paintEvent(QPaintEvent *event)
 	if (it != temperatureValues.end())
 		intersectionIndex = std::distance(temperatureValues.begin(), it);
 
-	long double intersectionTime = timeValues[intersectionIndex];
+    long double intersectionTime = timeValues[intersectionIndex];
+    intersectionIndex = std::min<size_t>(intersectionIndex * 1.04, timeValues.size() - 1);
 
-	long double maxTime = intersectionTime;
+	long double maxTime = timeValues[intersectionIndex];
 	long double maxTemperature = *std::max_element(temperatureValues.begin(), temperatureValues.end());
 	int width = this->width();
 	int height = this->height();
@@ -94,10 +95,10 @@ void graphwidget::paintEvent(QPaintEvent *event)
 
 
 	painter.setPen(Qt::lightGray);
-	for (size_t i = 1; i < pointsToShow && i < timeValues.size() && i < intersectionIndex; ++i)
+	for (size_t prev_i = 0, i = intersectionIndex / 200; i < timeValues.size() && i < intersectionIndex; prev_i = i, i += intersectionIndex / 200)
 	{
-		int x1 = 50 + static_cast<int>((timeValues[i - 1] / intersectionTime) * (width - 100));
-		int y1 = height - 50 - static_cast<int>((temperatureValues[i - 1] / maxTemperature) * (height - 100));
+		int x1 = 50 + static_cast<int>((timeValues[prev_i] / intersectionTime) * (width - 100));
+		int y1 = height - 50 - static_cast<int>((temperatureValues[prev_i] / maxTemperature) * (height - 100));
 
 		int x2 = 50 + static_cast<int>((timeValues[i] / intersectionTime) * (width - 100));
 		int y2 = height - 50 - static_cast<int>((temperatureValues[i] / maxTemperature) * (height - 100));
@@ -113,7 +114,7 @@ void graphwidget::paintEvent(QPaintEvent *event)
 
 	painter.drawText(5, yTarget, QString::number(targetTemperature, 'f', 2));
 
-	if (intersectionIndex != -1)
+	if (intersectionIndex >= 0)
 	{
 		long double tmp_total = copy_total_time;
 

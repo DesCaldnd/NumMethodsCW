@@ -12,7 +12,6 @@ long double get_velocity(long double eps, long double temperature_of_gas, long d
     long double tmp = get_viscosity(temperature_of_gas, S, T0, v0);
     if (std::abs(tmp) < eps)
         throw std::runtime_error("division by zero!");
-	std::cout << (2.0 / 9.0) * (density_gas * radius * radius * g / tmp) << std::endl;
     return (2.0 / 9.0) * (density_gas * radius * radius * g / tmp);
 }
 

@@ -27,10 +27,10 @@ mainwindow::mainwindow(QWidget *parent) :
 
 
     radiusInput = new QDoubleSpinBox(this);
-    radiusInput->setRange(0.0001, 0.1);
-    radiusInput->setValue(0.0001);
+    radiusInput->setRange(0.000'001, 0.1);
     radiusInput->setDecimals(6);
-    radiusInput->setSingleStep(0.0001);
+    radiusInput->setSingleStep(0.000'001);
+    radiusInput->setValue(0.0001);
 
 
     temperatureInput = new QDoubleSpinBox(this);
@@ -91,19 +91,17 @@ void mainwindow::updateGraph()
 
 void mainwindow::calculateTemperatures(long double radius, long double current_temperature)
 {
+    auto calc_start_time = std::chrono::high_resolution_clock::now();
     long double temperature_gas = maxTemperatureInput->value();
+    std::cout << "Start calculating, radius: " << radius << ", particle t: " << current_temperature << ", gas t: " << temperature_gas << std::endl;
     long double previous_temperature;
 
     long double step = 0.1;
     long double total_time = 0.0;
     size_t counter = 0;
     std::vector<long double> time_values{0};
-    std::vector<long double> temperature_values;
-    std::vector<long double> distance_values;
-    std::vector<size_t> counter_values;
+    std::vector<long double> temperature_values{current_temperature};
     auto beg_temperature = current_temperature;
-
-
 
 
     while (std::abs(temperature_gas - current_temperature) > eps)
@@ -120,21 +118,22 @@ void mainwindow::calculateTemperatures(long double radius, long double current_t
         temperature_values.push_back(current_temperature);
 
 
-        counter_values.push_back(counter);
-
-
         long double delta_temp = std::abs(current_temperature - previous_temperature);
+
+        counter++;
 
         if (delta_temp > 0.5)
         {
-            step *= std::max((long double) 0.5, 1.0 - delta_temp / 10.0);
+            step *= std::max((long double) 0.5, 0.45 / delta_temp);
             current_temperature = previous_temperature;
+            --counter;
+            time_values.pop_back();
+            temperature_values.pop_back();
+
         } else if (delta_temp < 0.001 && step < 1.0)
         {
             step *= 1.2;
         }
-
-        counter++;
     }
 
 
@@ -151,12 +150,14 @@ void mainwindow::calculateTemperatures(long double radius, long double current_t
                      std::log((0.01 * temperature_gas) / (beg_temperature - temperature_gas));
     }
 
+    auto calc_end_time = std::chrono::high_resolution_clock::now();
+    auto duration = calc_end_time - calc_start_time;
 
-    std::cout << "total_time = " << total_time << " sec\n";
+    std::cout << "total_time = " << total_time << " sec, iterations: " << counter << ", time: " << duration.count() / 1'000'000 << "ms" << std::endl;
 
     graphwidget->update_total_time(total_time);
     graphwidget->setTargetTemperature(temperature_gas);
-    graphwidget->setData(time_values, temperature_values, radiusInput->value());
+    graphwidget->setData(time_values, temperature_values, radius);
 	graphwidget->update();
 
     size_t intersectionIndex = -1;
@@ -183,10 +184,10 @@ void mainwindow::calculateTemperatures(long double radius, long double current_t
              << std::endl;
 
 
-        for (size_t i = 0; i < intersectionIndex; i += std::max<size_t>(counter_values.size() / 150, 10))
+        for (size_t i = 0; i < intersectionIndex; i += std::max<size_t>(counter / 150, 10))
         {
 
-            file << counter_values[i]
+            file << i
                  << "," << std::fixed << std::setprecision(6)
                  << (time_values[i] * total_time) / (time_values[intersectionIndex])
                  << "," << temperature_values[i]
@@ -194,7 +195,7 @@ void mainwindow::calculateTemperatures(long double radius, long double current_t
         }
 
 
-        file << counter_values[counter_values.size() - 1]
+        file << counter - 1
              << "," << total_time
              << "," << temperature_values[intersectionIndex]
              << std::endl;
