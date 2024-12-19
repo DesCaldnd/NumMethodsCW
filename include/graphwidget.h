@@ -1,6 +1,4 @@
-//
-// Created by fedor on 31.10.2024.
-//
+
 
 #ifndef CWNUM_GRAPHWIDGET_H
 #define CWNUM_GRAPHWIDGET_H

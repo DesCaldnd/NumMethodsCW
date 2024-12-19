@@ -1,6 +1,3 @@
-//
-// Created by fedor on 31.10.2024.
-//
 
 #ifndef CWNUM_FUNCS_H
 #define CWNUM_FUNCS_H
@@ -38,7 +35,5 @@ long double runge_kutta_4th_order(long double current_temperature, long double s
                                   long double density_material, long double Cp_Fe,
                                   long double Cp_air, long double k, long double S,
                                   long double T0, long double v0, long double g);
-
-void runge_kutta_4_distance(long double &velocity, long double &distance, long double step, long double g);
 
 #endif //CWNUM_FUNCS_H

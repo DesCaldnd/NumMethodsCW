@@ -1,7 +1,3 @@
-//
-// Created by fedor on 31.10.2024.
-//
-
 // You may need to build the project (run Qt uic code generator) to get "ui_mainwindow.h" resolved
 
 #include "../include/mainwindow.h"
@@ -17,23 +13,23 @@ mainwindow::mainwindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    setWindowTitle("Релаксация частицы");
+    setWindowTitle("Particle relaxation");
 
-    density_material = 7874;
+	density_Fe = 7874;
     Cp_Fe = 460;
 
-    name_material = "Железо";
+    name_material = "Ferrum";
 
-    QLabel *radiusLabel = new QLabel("Радиус (м):", this);
+    QLabel *radiusLabel = new QLabel("Radius (м):", this);
 
-    QLabel *temperatureLabel = new QLabel("Начальная температура частицы (K):", this);
-    QLabel *maxTemperatureLabel = new QLabel("Температура потока (K):", this);
+    QLabel *temperatureLabel = new QLabel("Start particle temperature (K):", this);
+    QLabel *maxTemperatureLabel = new QLabel("Stream temperature (K):", this);
 
 
     radiusInput = new QDoubleSpinBox(this);
     radiusInput->setRange(0.0001, 0.1);
     radiusInput->setValue(0.0001);
-    radiusInput->setDecimals(4);
+    radiusInput->setDecimals(6);
     radiusInput->setSingleStep(0.0001);
 
 
@@ -101,15 +97,11 @@ void mainwindow::calculateTemperatures(long double radius, long double current_t
     long double step = 0.1;
     long double total_time = 0.0;
     size_t counter = 0;
-    std::vector<long double> time_values;
+    std::vector<long double> time_values{0};
     std::vector<long double> temperature_values;
-    std::vector<long double> velocity_values;
     std::vector<long double> distance_values;
-    std::vector<long double> counter_values;
+    std::vector<size_t> counter_values;
     auto beg_temperature = current_temperature;
-
-    long double velocity = 0.0; // Начальная скорость частицы
-    long double distance = 0.0; // Начальное расстояние
 
 
 
@@ -119,22 +111,16 @@ void mainwindow::calculateTemperatures(long double radius, long double current_t
         previous_temperature = current_temperature;
 
         current_temperature = runge_kutta_4th_order(previous_temperature, step, eps,
-                                                    temperature_gas, radius,
-                                                    density_air, density_material, Cp_Fe,
-                                                    Cp_air, k, S, T0, v0, g);
+													temperature_gas, radius,
+													density_air, density_Fe, Cp_Fe,
+													Cp_air, k, S, T0, v0, g);
 
-        runge_kutta_4_distance(velocity, distance, step * 0.0001, g);
-
-
-        time_values.push_back(counter);
+		auto new_time = time_values.back() + step;
+        time_values.push_back(new_time);
         temperature_values.push_back(current_temperature);
-        velocity_values.push_back(velocity);
-        distance_values.push_back(distance);
 
 
         counter_values.push_back(counter);
-        time_values.push_back(counter);
-        temperature_values.push_back(current_temperature);
 
 
         long double delta_temp = std::abs(current_temperature - previous_temperature);
@@ -157,11 +143,11 @@ void mainwindow::calculateTemperatures(long double radius, long double current_t
     if (beg_temperature < temperature_gas)
     {
 
-        total_time = (density_material * Cp_Fe * radius * radius * 2) / (3 * h) *
+        total_time = (density_Fe * Cp_Fe * radius * radius * 2) / (3 * h) *
                      std::log((temperature_gas - beg_temperature) / (0.01 * temperature_gas));
     } else
     {
-        total_time = -(density_material * Cp_Fe * radius * radius * 2) / (3 * h) *
+        total_time = -(density_Fe * Cp_Fe * radius * radius * 2) / (3 * h) *
                      std::log((0.01 * temperature_gas) / (beg_temperature - temperature_gas));
     }
 
@@ -171,6 +157,7 @@ void mainwindow::calculateTemperatures(long double radius, long double current_t
     graphwidget->update_total_time(total_time);
     graphwidget->setTargetTemperature(temperature_gas);
     graphwidget->setData(time_values, temperature_values, radiusInput->value());
+	graphwidget->update();
 
     size_t intersectionIndex = -1;
 
@@ -192,22 +179,16 @@ void mainwindow::calculateTemperatures(long double radius, long double current_t
 
         file << "Counter"
              << "," << "Time"
-             << "," << "Velocity"
-             << "," << "Distance"
              << "," << "Temperature"
              << std::endl;
 
 
-        for (size_t i = 0; i < counter_values.size(); i += 923)
+        for (size_t i = 0; i < intersectionIndex; i += std::max<size_t>(counter_values.size() / 150, 10))
         {
 
             file << counter_values[i]
                  << "," << std::fixed << std::setprecision(6)
-                 << (time_values[i] * total_time * 1.5) / (time_values[intersectionIndex])
-                 << "," << velocity_values[i]
-                 << ","
-                 << g * (time_values[i] * total_time * 1.5) / (time_values[intersectionIndex])
-                    * (time_values[i] * total_time * 1.5) / (time_values[intersectionIndex]) / 2
+                 << (time_values[i] * total_time) / (time_values[intersectionIndex])
                  << "," << temperature_values[i]
                  << std::endl;
         }
@@ -215,8 +196,6 @@ void mainwindow::calculateTemperatures(long double radius, long double current_t
 
         file << counter_values[counter_values.size() - 1]
              << "," << total_time
-             << "," << velocity_values[velocity_values.size() - 1]
-             << "," << g * total_time * total_time / 2
              << "," << temperature_values[intersectionIndex]
              << std::endl;
 

@@ -1,6 +1,3 @@
-//
-// Created by fedor on 31.10.2024.
-//
 
 #ifndef CWNUM_MAINWINDOW_H
 #define CWNUM_MAINWINDOW_H
@@ -40,7 +37,7 @@ private:
     long double eps = 1e-9; // точность
 
 
-    long double density_material = 7874.0;
+    long double density_Fe = 7874.0;
     long double Cp_Fe = 460.0;
 
 
