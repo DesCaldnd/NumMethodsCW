@@ -175,8 +175,7 @@ void mainwindow::calculateTemperatures(long double radius, long double current_t
         if (!file.is_open())
             throw std::runtime_error("Can't open file!");
 
-        file << "#" << beg_temperature << " -> " << temperature_gas << " for radius = " << std::setw(6) << radius
-             << " for material: " << name_material << std::endl;
+        file << "#" << beg_temperature << " -> " << temperature_gas << " for radius = " << std::setw(6) << radius << std::endl;
 
         file << "Counter"
              << "," << "Time"
